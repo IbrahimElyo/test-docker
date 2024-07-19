@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  server:
+    build:
+      context: .
+      target: development
+    ports:
+      - "9000:80"
+    depends_on:
+      - db
+    secrets:
+      - db-password
+    environment:
+      - PASSWORD_FILE_PATH=/run/secrets/db-password
+      - DB_HOST=db
+      - DB_NAME=example
+      - DB_USER=root
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /var/www/html
+  db:
+    image: mariadb
+    restart: always
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db-password
+      - MARIADB_DATABASE=example
+    expose:
+      - "3306"
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=db
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password
+    depends_on:
+      - db
+    secrets:
+      - db-password
+
+volumes:
+  db-data:
+secrets:
+  db-password:
+    file: db/password.txt
